@@ -4,4 +4,4 @@ documents/
 uploads/
 public/s
 
-public/
+public/**
