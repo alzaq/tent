@@ -126,12 +126,12 @@ function renderMarkdown (doc, opts) {
     const attributes = parsedDoc.attributes || {}
     const title = attributes.title ? `<h1>${parsedDoc.attributes.title}</h1>` : ''
 
-    element = html`<div class="tent-mdBody" onUpdate=${(el) => {
+    element = html`<div class="tent-mdBody" onupdate=${(el) => {
       el.innerHTML = title + md.render(parsedDoc.body)
       initSlider()
     }}></div>`
   } else {
-    element = html`<div class="tent-mdBody" onUpdate=${(el) => {
+    element = html`<div class="tent-mdBody" onupdate=${(el) => {
       el.innerHTML = md.render(doc)
       initSlider()
     }}></div>`

@@ -1,5 +1,5 @@
-const simpleEditor = require('./simple-editor')
-const markdownPreview = require('./markdown-preview')
+const Editor = require('./simple-editor')
+const Preview = require('./markdown-preview')
 const dragDrop = require('drag-drop')
 const api = require('./client-api.js')
 const debounce = require('lodash.debounce')
@@ -148,51 +148,48 @@ const styles = css`
   }
 `
 
-let editor
 let editorEl
 
-const model = {
+const state = {
   doc: '',
   docId: '',
   docList: [],
   showNewDocPopOver: false
 }
 
-const subscriptions = [
-  (model, actions, error) => {
+const events = {
+  loaded: (state, actions) => {
     log('Start like an animal!')
 
     window.onbeforeunload = (ev) => actions.saveState()
 
     actions.loadDocList()
       .then(actions.loadLastOpenDoc)
-  },
-  (model, actions, error) => {
+
     dragDrop(document.body, function (files) {
       files.forEach(function (file) {
         actions.saveFile(file)
       })
     })
   }
-]
+}
 
 const actions = {
-  updateDocList: (model, data, actions, error) => {
+  updateDocList: (state, actions, data, emit) => {
     return { docList: data }
   },
-  updateDoc: (model, data, actions, error) => {
+  updateDoc: (state, actions, data, emit) => {
     return { doc: data.doc, docId: data.docId }
   },
-  toggleNewDocPopover: (model, data, actions, error) => {
+  toggleNewDocPopover: (state, actions, data, emit) => {
     return { showNewDocPopOver: data }
   },
-  saveFile: (model, data, actions, error) => {
+  saveFile: (state, actions, data, emit) => {
     log('Saving file')
     api.saveFile(data, (err, res) => {
       if (err) console.log(err)
       console.log(res.data)
       const type = res.data.type.split('/')[0]
-      const editorTextEl = editorEl.querySelector('textarea')
 
       let insertContent
       if (type === 'image') {
@@ -201,10 +198,10 @@ const actions = {
         insertContent = res.data.url
       }
 
-      insertAtCaret(editorTextEl, insertContent)
+      insertAtCaret(editorEl, insertContent)
     })
   },
-  loadDocList: (model, data, actions, error) => {
+  loadDocList: (state, actions, data, emit) => {
     return new Promise((resolve, reject) => {
       api.getList((err, res) => {
         if (err) reject(err)
@@ -214,23 +211,19 @@ const actions = {
       })
     })
   },
-  loadDoc: (model, data, actions, error) => {
-    const docId = data || model.docList[0]
+  loadDoc: (state, actions, data, emit) => {
+    const docId = data || state.docList[0]
     return new Promise((resolve, reject) => {
       api.getDoc(docId, (err, res) => {
         if (err) reject(err)
         log('Loaded doc: ' + docId)
         actions.updateDoc({ doc: res.data, docId: docId })
-        actions.updateEditor(model, actions, data, error)
+        editorEl.value = res.data
         resolve(res)
       })
     })
   },
-  updateEditor: (model, data, actions, error) => {
-    log('Updating editor')
-    editor.update(model.doc, editorEl)
-  },
-  saveDoc: (model, data, actions, error) => {
+  saveDoc: (state, actions, data, emit) => {
     log('Saving: ' + data.docId)
     return new Promise(function (resolve, reject) {
       api.saveDoc(data.docId, data.doc, (err, res) => {
@@ -241,7 +234,7 @@ const actions = {
       })
     })
   },
-  newDoc: (model, data, actions, error) => {
+  newDoc: (state, actions, data, emit) => {
     const docId = data
     log('Creating new doc: ' + docId)
 
@@ -250,10 +243,10 @@ const actions = {
       .then(() => actions.loadDoc(docId))
       .then(() => actions.toggleNewDocPopover(false))
   },
-  saveState: (model, data, actions, error) => {
-    localStorage.setItem('tentState', JSON.stringify(model))
+  saveState: (state, actions, data, emit) => {
+    localStorage.setItem('tentState', JSON.stringify(state))
   },
-  loadLastOpenDoc: (model, data, actions, error) => {
+  loadLastOpenDoc: (state, actions, data, emit) => {
     const savedStateString = localStorage.getItem('tentState')
     const savedState = JSON.parse(savedStateString)
     let docId
@@ -268,26 +261,36 @@ const actions = {
 
 const _saveDoc = debounce((data, actions) => actions.saveDoc(data), 1000)
 
-function Editor (model, actions) {
-  editor = simpleEditor(model.doc, (updatedDoc) => {
-    const data = {docId: model.docId, doc: updatedDoc}
+// function Editor (state, actions) {
+//   editor = simpleEditor(state.doc, (updatedDoc) => {
+//     const data = {docId: state.docId, doc: updatedDoc}
+//     actions.updateDoc(data)
+//     _saveDoc(data, actions)
+//   })
+//
+//   return html`<div oncreate=${(el) => {
+//       el.appendChild(editor.el)
+//       editorEl = el
+//     }}>
+//   </div>`
+// }
+
+function view (state, actions) {
+  let newDocName = ''
+
+  function onEditorChange (ev) {
+    const data = {docId: state.docId, doc: ev.target.value}
     actions.updateDoc(data)
     _saveDoc(data, actions)
-  })
+  }
 
-  return html`<div onCreate=${(el) => {
-      el.appendChild(editor.el)
-      editorEl = el
-    }}>
-  </div>`
-}
-
-function view (model, actions) {
-  let newDocName = ''
+  function onEditorCreate (el) {
+    editorEl = el
+  }
 
   return html`
     <main class="tent-main">
-      <div class="tent-newDoc ${model.showNewDocPopOver ? 'is-visible' : ''}">
+      <div class="tent-newDoc ${state.showNewDocPopOver ? 'is-visible' : ''}">
         <h4>Create new document</h4>
         <input type="text" placeholder="path/name" onchange=${(ev) => newDocName = ev.target.value}/>
         <button onclick=${() => actions.newDoc(newDocName)}>create</button>
@@ -295,27 +298,27 @@ function view (model, actions) {
 
       <ul class="tent-list">
         <li><button onclick=${() => actions.toggleNewDocPopover(true)}>+ new</button></li>
-        ${model.docList.map((docId) => {
-          return html`<li class="${model.docId === docId ? 'active' : ''}">
+        ${state.docList.map((docId) => {
+          return html`<li class="${state.docId === docId ? 'active' : ''}">
             <button onclick=${(ev) => actions.loadDoc(docId)}>${docId}</button>
           </li>`
         })}
       </ul>
 
       <div class="tent-editor">
-        ${Editor(model, actions)}
+        ${Editor(state.doc, onEditorCreate, onEditorChange)}
       </div>
 
       <div class="tent-preview">
-        ${markdownPreview(model.doc, { parseFrontmatter: true } )}
+        ${Preview(state.doc, { parseFrontmatter: true } )}
       </div>
     </main>
   `
 }
 
 const myApp = app({
-  model: model,
+  state: state,
   view: view,
   actions: actions,
-  subscriptions: subscriptions
+  events: events
 })
