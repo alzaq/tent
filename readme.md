@@ -1,6 +1,6 @@
 # Tent
 
-<img width="100" src="public/favicon.png">
+<img width="70" style="float: right; padding-right: 30px;" src="public/favicon.png">
 
 Experimental admin interface to static sites / notes / whatever. Editor for Markdown body with YAML frontmatter fields and a cool live preview. Plus drag and drop image/file upload with resizing and optimization built it :sparkles: Built with Hyperapp and/or Preact. WIP.
 
@@ -8,8 +8,9 @@ Experimental admin interface to static sites / notes / whatever. Editor for Mark
 
 ## Features
 
-* Separate components that you can mix and match
-* Supports deeply nested fields, objects and arrays
+* Runs locally or on the server
+* Supports options for document and file storage directories, like so: `node node_modules/tent/server/index.js --docs=content --public=public --relativeMediaDir=/media/`
+* Smart attachement handling: resizes and optimizes images, stores everything else. Inserts a relative link into the document body (where the cursor is), after you drag & drop the file.
 
 ## Usage
 
