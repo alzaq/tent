@@ -1,6 +1,6 @@
 # Tent
 
-<img width="70" src="logo.png" align=left">
+<img width="70" src="logo.png" align="left">
 
 Experimental admin interface to static sites / notes / whatever. Editor for Markdown body with YAML frontmatter fields and a cool live preview. Plus drag and drop image/file upload with resizing and optimization built it :sparkles: Built with Hyperapp and/or Preact. WIP.
 
