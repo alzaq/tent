@@ -130,6 +130,7 @@ const styles = css`
     text-align: left;
     outline: none;
     font-size: 12px;
+    border-radius: 0;
   }
 
   .tent-panels {
