@@ -165,6 +165,7 @@ const events = {
 
     actions.loadDocList()
       .then(actions.loadLastOpenDoc)
+      .catch((err) => console.log(err))
 
     dragDrop(document.body, function (files) {
       files.forEach(function (file) {
@@ -242,6 +243,7 @@ const actions = {
       .then(actions.loadDocList)
       .then(() => actions.loadDoc(docId))
       .then(() => actions.toggleNewDocPopover(false))
+      .catch((err) => console.log(err))
   },
   saveState: (state, actions, data, emit) => {
     localStorage.setItem('tentState', JSON.stringify(state))
@@ -256,6 +258,7 @@ const actions = {
     }
     return actions.loadDoc(docId)
       .then(actions.updateEditor)
+      .catch((err) => console.log(err))
   }
 }
 
