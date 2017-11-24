@@ -1,13 +1,16 @@
 const yo = require('yo-yo')
+const cuid = require('cuid')
 
-const blocks = {
-  "free-content": {
+const blocks = [
+  {
+    "id": "free-content",
     "name": "Free content",
     "fields": [
       { "id": "content", "label": "Content", "type": "markdown" }
     ]
   },
-  "place": {
+  {
+    "id": "place",
     "name": "Place",
     "fields": [
       { "id": "title", "label": "Title", "type": "text" },
@@ -16,101 +19,94 @@ const blocks = {
       { "id": "type", "label": "Type of place", "type": "select", "data": ['large', 'small', 'medium'] }
     ]
   }
+]
+  
+// const blocksToDisplay = ['free-content', 'place', 'place', 'free-content']
+let state = {
+  blocks: []
+}
+window.state = state
+
+var savedState = localStorage.getItem('tentState')
+if ( savedState ) {
+  state = JSON.parse(savedState)
+}
+
+const el = render(state)
+document.body.appendChild(el)
+
+function update () {
+  console.log('update!')
+  console.log(JSON.stringify(state))
+  localStorage.setItem('tentState', JSON.stringify(state))
+  yo.update(el, render(state))
+}
+
+function addNewBlock (type) {
+  var blockTemplate = blocks.find(block => {
+    return block.id === type
+  })
+  var newBlock = Object.assign({}, blockTemplate, { uniqueID: cuid() })
+  newBlock.fields.forEach(field => {
+    field.uniqueID = cuid()
+  })
+  state.blocks.push(newBlock)
+  console.log(newBlock)
+  update()
 }
   
-const blocksToDisplay = ['free-content', 'place', 'place', 'free-content']
-
-const data = {}
-// window.data = data
-  
-function admin (blocks, data) {  
+function render (state) {  
   return yo`
     <span>
-      <style>
-        * {font-family: sans-serif; box-sizing: border-box;}
-  
-        .block {
-          background-color: #f1f1f1;
-          padding: 15px;
-          margin-bottom: 15px;
-        }
-  
-        fieldgroup { 
-         display: block;
-         margin-bottom: 20px;
-        }
-  
-        label {
-          display: block;
-          text-transform: uppercase;
-          font-size: 10px;
-          letter-spacing: 1px;
-          margin-bottom: 5px;
-        }
-  
-        textarea {
-          width: 300px;
-          height: 80px;
-          border: 1px solid black;
-        }
-  
-        input {
-          padding: 4px 5px;
-          border: 1px solid black;
-        }
-      </style>
-      <form onsubmit=${(ev) => {
-        ev.preventDefault()
-      }}>
-        ${blocksToDisplay.map((block) => {
-          const blockId = block + Date.now()
-          return yo`
-  					<div class="block">
-              <h3>${blocks[block].name}</h3>
-  						${blocks[block].fields.map((field) => {
-                return fieldEl(field, blockId)
-              })}
-  					</div>
-  				`
+      <button onclick=${ev => addNewBlock(document.getElementById('blockType').value)}>
+        add block
+      </button>
+      <select id="blockType">
+        ${blocks.map(item => {
+          return yo`<option>${item.id}</option>`
         })}
-        <textarea>${data}</textarea>
-        <button type="submit" onclick=${() => {
-          console.log(JSON.stringify(data))
-        }}>Save</button>
+      </select>
+      <form onsubmit=${ev => ev.preventDefault()}>
+        ${state.blocks.map(block => {
+          return yo`<div class="block">
+              <h3>${block.name}</h3>
+  			  ${block.fields.map((field) => {
+                return fieldEl(field, block)
+              })}
+          </div>`
+        })}
       </form>
     </span>
   `
 }
 
-function saveField (block, field, value) {
-  data[block][field.id].value = value
-  // yo.update(admin(blocks, data), el)
+function saveField (block, field, newValue) {
+  field.value = newValue
+  console.log(state)
+  update()
 }
   
 function fieldEl (field, block) {
-  data[block] = data[block] || {}
-  data[block][field.id] = field
-
   switch (field.type) {
     case 'text':
       return yo`
-  			<fieldgroup>
+  		<fieldgroup>
           <label>${field.label}</label>
-  			  <input type="text" data-block="${block}" name="${block}_${field.id}" placeholder="${field.label}" onkeyup=${ev => saveField(block, field, ev.target.value)}>
+  		  <input type="text" name="${field.uniqueID}" placeholder="${field.label}" value="${field.value || ''}" onkeyup=${ev => saveField(block, field, ev.target.value)}>
         </fieldgroup>
   		`
     case 'textarea':
       return yo`
         <fieldgroup>
           <label>${field.label}</label>
-          <textarea name="${field.id}" onkeyup=${ev => saveField(block, field, ev.target.value)}></textarea>
+          <textarea name="${field.id}" onkeyup=${ev => saveField(block, field, ev.target.value)}>${field.value || ''}</textarea>
         </fieldgroup>
       `
     case 'markdown':
       return yo`
         <fieldgroup>
           <label>${field.label}</label>
-          <textarea name="${field.id}" onkeyup=${ev => saveField(block, field, ev.target.value)}></textarea>
+          <textarea name="${field.id}" onkeyup=${ev => saveField(block, field, ev.target.value)}>${field.value || ''}</textarea>
         </fieldgroup>
       `
     case 'select':
@@ -118,7 +114,7 @@ function fieldEl (field, block) {
         <fieldgroup>
           <select onchange=${ev => saveField(block, field, ev.target.value)}>
            ${field.data.map((item) => {
-             return yo`<option>${item}</option>`
+             return yo`<option selected="${field.value === item ? 'true' : false}">${item}</option>`
            })}
           </select>
         </fieldgroup>
@@ -131,6 +127,3 @@ function fieldEl (field, block) {
       `
   }
 }
-
-const el = admin(blocks)
-document.body.appendChild(el)
