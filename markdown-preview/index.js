@@ -24,6 +24,7 @@ const styles = css`
     box-sizing: border-box;
     padding: 7px 15px;
     line-height: 1.5;
+    word-wrap: break-word;
   }
 
   .tent-mdBody h1 {
@@ -62,11 +63,14 @@ const styles = css`
   }
 
   .tent-mdBody code {
-    padding: 0.2em 0.3em;
+    display: inline-block;
+    padding: 0.3em 0.6em;
     font-family: inherit;
     font-size: 90%;
     border-radius: 3px;
     background-color: rgba(27,31,35,0.05);
+    max-width: 100%;
+    overflow-x: auto;
   }
 
   .tent-mdBody hr {
