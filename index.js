@@ -265,20 +265,6 @@ const actions = {
 
 const _saveDoc = debounce((data, actions) => actions.saveDoc(data), 1000)
 
-// function Editor (state, actions) {
-//   editor = simpleEditor(state.doc, (updatedDoc) => {
-//     const data = {docId: state.docId, doc: updatedDoc}
-//     actions.updateDoc(data)
-//     _saveDoc(data, actions)
-//   })
-//
-//   return html`<div oncreate=${(el) => {
-//       el.appendChild(editor.el)
-//       editorEl = el
-//     }}>
-//   </div>`
-// }
-
 function view (state, actions) {
   let newDocName = ''
 

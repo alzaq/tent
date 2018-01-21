@@ -13,7 +13,7 @@
   "dependencies": {
     "body-parser": "^1.17.2",
     "browser-sync": "^2.18.12",
-    "bundle-collapser": "^1.2.1",
+    "bundle-collapser": "^1.3.0",
     "drag-drop": "^2.13.2",
     "express": "^4.15.3",
     "fastmatter": "^1.1.1",
